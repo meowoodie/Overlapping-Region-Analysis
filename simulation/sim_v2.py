@@ -138,7 +138,7 @@ if __name__ == '__main__':
             }
             waiting_times = []
             # Create process for generating events iteratively
-            env.process(event_generator(env, [ police1, police2 ], event_lam=.3, service_lam=5.))
+            env.process(event_generator(env, [ police1, police2 ], event_lam=.3, service_lam=10.))
             # Execute
             env.run(until=10000)
 

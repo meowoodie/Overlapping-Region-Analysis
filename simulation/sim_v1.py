@@ -42,24 +42,26 @@ class Event(object):
     '''
 
     def __init__(self, id, time, location):
-        self.id       = id
-        self.time     = time
-        self.location = location
-        self.end_time = 0
+        self.id            = id
+        self.location      = location
+        self.time          = time
+        self.dispatch_time = 0
+        self.service_time  = 0
+        self.end_time      = 0
         self.travel_duration  = 0
         self.waiting_duration = 0
         self.assigned_server  = -1
         # self.proc_time = np.random.exponential(lam, 1)[0]
 
     def __str__(self):
-        return 'Event [%d]: occrred at %f' % (self.id, self.time)
+        return 'Event [%d]: occurred at %f -> dispatch at %f -> end at %f' % (self.id, self.time, self.dispatch_time, self.end_time)
 
 class Server(object):
     '''
     Server Object
     '''
 
-    def __init__(self, id, start_time=0., start_location=[50., 50.], speed=1, mu=200):
+    def __init__(self, id, start_time=0., start_location=[50., 50.], speed=10, mu=.01):
         self.id             = id
         self.start_time     = start_time
         self.start_location = start_location
@@ -76,15 +78,16 @@ class Server(object):
         event.assigned_server = self.id
         # server has to wait until the new event occours.
         # otherwise event has to wait until the server finish the previous jobs.
-        if self.cur_time <= event.time:
-            self.idle_times.append(event.time - self.cur_time)
+        if self.cur_time < event.time:
+            # self.idle_times.append(event.time - self.cur_time)
             self.cur_time = event.time
         # after (event waiting server / server waiting event)
         # server start to serve current event
+        event.dispatch_time    = self.cur_time
         event.travel_duration  = distance(event.location, self.cur_location) / self.speed
-        service_time           = self.cur_time + event.travel_duration
-        event.end_time         = service_time + np.random.exponential(self.mu, 1)[0]
-        event.waiting_duration = service_time - event.time
+        event.service_time     = self.cur_time + event.travel_duration
+        event.end_time         = event.service_time + np.random.exponential(self.mu, 1)[0]
+        event.waiting_duration = event.service_time - event.time
         self.cur_time          = event.end_time
         self.cur_location      = event.location
         self.served_events.append(event.id)
@@ -171,6 +174,10 @@ class Simulation(object):
             server = self.dispatch_policy(event_id)
             server.serve(self.events[event_id])
 
+        # for event in self.events:
+        #     if event.assigned_server == 0:
+        #         print(event)
+
     def get_avg_waiting_time(self):
         # get average waiting time of events in terms of each server.
         avg_waiting_times = []
@@ -220,6 +227,8 @@ class Simulation(object):
 
 
 if __name__ == '__main__':
+    np.random.seed(1)
+
     lam       = 100
     n_epoches = 100
 
@@ -245,7 +254,7 @@ if __name__ == '__main__':
 
             avg_waiting_times.append(avg_waiting_time)
             # max_waiting_times.append(max_waiting_time)
-
+    
         avg_waiting_time_list.append(avg_waiting_times)
         # max_waiting_time_list.append(max_waiting_times)
 
